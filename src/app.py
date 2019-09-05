@@ -23,4 +23,12 @@ def LoadData(dataFolderpath):
             dfs.push(df)
     return dfs
 
+def VisualiseData(dfs):
+    for df in dfs:
+        for i in range(1,13):
+            df_plot = df[df[24] == 1].values
+            # In this example code, only accelerometer 1 data (column 1 to 3) is used
+            plt.plot(df_sitting[:, 0:3])
+            plt.show()
+
 if __name__ == '__main__':
