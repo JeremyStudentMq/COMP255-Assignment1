@@ -24,6 +24,16 @@ def LoadData(dataFolderpath):
             dfs.append(df)
     return dfs
 
+def CleanNoise(dfs):
+    cleanDfs=[]
+    for df in dfs:
+        for c in range(1, 14):
+            activity_data = df[df[24] == c].values
+            b, a = signal.butter(4, 0.04, 'low', analog=False)
+            for j in range(24):
+                activity_data[:, j] = signal.lfilter(b, a, activity_data[:, j])
+        cleanDfs.append(activity_data)
+    return cleanDfs
 def VisualiseData(dfs):
     for df in dfs:
         for i in range(1,13):
