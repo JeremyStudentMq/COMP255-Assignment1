@@ -37,7 +37,10 @@ For raw sensor data, it usually contains noise that arises from different source
 calibration, sensor errors, errors in sensor placement, or noisy environments. We could apply filter to remove noise of sensor data
 to smooth data. In this example code, Butterworth low-pass filter is applied.
 '''
-def GetFeatures():
+
+
+#Pre - The data must be noise filtered already
+def GetFeatures(dfs):
     # mean, median, mode Arithmetic average, median and mode
     # var, std Variance and standard deviation
     # sem Standard error of mean
@@ -46,7 +49,13 @@ def GetFeatures():
     stdDev = sqrt((1/size)*SumOfTermsMinusMeanPow(terms,sampleMeans,2)))
     standardError = stdDev/sqrt(n)
     skewness = CalculateSkewness(terms,mean,stdDev,size)
+    kurtosis=  CalculateKurtosis(terms,mean,stdDev,size)
 
+def CalculateKurtosis(terms,mean,stdDev,size):
+    tmpKurto=0
+    for term in terms:
+        tmpKurto=tmpKurto+((term-mean)^4/size*stdDev^4)
+    return tmpKurto
 
 def CalculateSkewness(terms,mean,stdDev,size):
     tmpSkew=0
