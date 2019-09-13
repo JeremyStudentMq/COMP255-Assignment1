@@ -79,19 +79,42 @@ def SumOfTermsMinusMeanPow(terms,sampleMean,pow):
         tmpSum = tmpSum+(term-sampleMean)^pow
     return tmpSum
 
-#Altered version of remove noise
+def CreateTrainingAndTestingDataSets(dfs):
+        for df in dfs:
+
+            datat_len = len(df)
+            activity_data=df.values
+            training_len = math.floor(datat_len * 0.8)
+            training_data = activity_data[:training_len, :]
+            testing_data = activity_data[training_len:, :]
+
+            # data segementation: for time series data, we need to segment the whole time series, and then extract features from each period of time
+            # to represent the raw data. In this example code, we define each period of time contains 1000 data points. Each period of time contains
+            # different data points. You may consider overlap segmentation, which means consecutive two segmentation share a part of data points, to
+            # get more feature samples.
+            training_sample_number = training_len // 1000 + 1
+            testing_sample_number = (datat_len - training_len) // 1000 + 1
+
+
+#Altered sample version of remove noise for my purposes
 def RemoveNoise(df, activityVal):
-    # df = pd.read_csv('dataset/dataset_1.txt', sep=',', header=None)
-    # Butterworth low-pass filter. You could try different parameters and other filters.
     b, a = signal.butter(4, 0.04, 'high', analog=False)
     df_clean = df[df[24] == activityVal].values
     for i in range(3):
         df_clean[:,i] = signal.lfilter(b, a, df_clean[:, i])
     return df_clean
 
+#1. load dataset -> done
+#2. visualize data -> done
+#3. remove signal noises -> done
+#4. extract features -> done
+#5. prepare training set -> to do
+#6. training the given models -> to do
+#7. test the given models -> to do
+#8. print out the evaluation results -> to do
+
+
 if __name__ == '__main__':
     data = "../dataset/"
     dataset=LoadData(os.getcwd()+"/../dataset/raw/")
     #VisualiseData(dataset)
-    print("Hello")
-    print(dataset)

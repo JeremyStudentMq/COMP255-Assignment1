@@ -1,7 +1,7 @@
-import numpy as np 
-import pandas as pd 
+import numpy as np
+import pandas as pd
 from scipy import signal
-import matplotlib.pyplot as plt 
+import matplotlib.pyplot as plt
 import math
 from sklearn import preprocessing
 from sklearn.neighbors import KNeighborsClassifier
@@ -15,7 +15,7 @@ from sklearn.model_selection import GridSearchCV
 #2. visualize data -> sample code given
 #3. remove signal noises -> sample code given
 #4. extract features -> sample code given
-#5. prepare training set -> sample code given 
+#5. prepare training set -> sample code given
 #6. training the given models -> sample code given
 #7. test the given models -> sample code given
 #8. print out the evaluation results -> sample code given
@@ -28,7 +28,7 @@ from sklearn.model_selection import GridSearchCV
 
 '''
 At first, we should explore the raw time-series sensor data. We could draw line plot of sensor signals.
-In this example code, the wrist sensor accelerometer data dataset_1 sitting activity is visualized.   
+In this example code, the wrist sensor accelerometer data dataset_1 sitting activity is visualized.
 '''
 def data_visulization():
     # read dataset file
@@ -41,11 +41,11 @@ def data_visulization():
 '''
 For raw sensor data, it usually contains noise that arises from different sources, such as sensor mis-
 calibration, sensor errors, errors in sensor placement, or noisy environments. We could apply filter to remove noise of sensor data
-to smooth data. In this example code, Butterworth low-pass filter is applied. 
+to smooth data. In this example code, Butterworth low-pass filter is applied.
 '''
 def noise_removing():
     df = pd.read_csv('dataset/dataset_1.txt', sep=',', header=None)
-    # Butterworth low-pass filter. You could try different parameters and other filters. 
+    # Butterworth low-pass filter. You could try different parameters and other filters.
     b, a = signal.butter(4, 0.04, 'low', analog=False)
     df_sitting = df[df[24] == 1].values
     for i in range(3):
@@ -55,7 +55,7 @@ def noise_removing():
 
 
 '''
-To build a human activity recognition system, we need to extract features from raw data and create feature dataset for training 
+To build a human activity recognition system, we need to extract features from raw data and create feature dataset for training
 machine learning models.
 
 Please create new functions to implement your own feature engineering. The function should output training and testing dataset.
@@ -72,15 +72,15 @@ def feature_engineering_example():
             b, a = signal.butter(4, 0.04, 'low', analog=False)
             for j in range(24):
                 activity_data[:, j] = signal.lfilter(b, a, activity_data[:, j])
-            
+
             datat_len = len(activity_data)
             training_len = math.floor(datat_len * 0.8)
             training_data = activity_data[:training_len, :]
             testing_data = activity_data[training_len:, :]
 
             # data segementation: for time series data, we need to segment the whole time series, and then extract features from each period of time
-            # to represent the raw data. In this example code, we define each period of time contains 1000 data points. Each period of time contains 
-            # different data points. You may consider overlap segmentation, which means consecutive two segmentation share a part of data points, to 
+            # to represent the raw data. In this example code, we define each period of time contains 1000 data points. Each period of time contains
+            # different data points. You may consider overlap segmentation, which means consecutive two segmentation share a part of data points, to
             # get more feature samples.
             training_sample_number = training_len // 1000 + 1
             testing_sample_number = (datat_len - training_len) // 1000 + 1
@@ -101,7 +101,7 @@ def feature_engineering_example():
                 feature_sample.append(sample_data[0, -1])
                 feature_sample = np.array([feature_sample])
                 training = np.concatenate((training, feature_sample), axis=0)
-            
+
             for s in range(testing_sample_number):
                 if s < training_sample_number - 1:
                     sample_data = testing_data[1000*s:1000*(s + 1), :]
@@ -141,8 +141,8 @@ def model_training_and_evaluation_example():
     y_test = y_test - 1
     df_testing = df_testing.drop([9], axis=1)
     X_test = df_testing.values
-    
-    # Feature normalization for improving the performance of machine learning models. In this example code, 
+
+    # Feature normalization for improving the performance of machine learning models. In this example code,
     # StandardScaler is used to scale original feature to be centered around zero. You could try other normalization methods.
     scaler = preprocessing.StandardScaler().fit(X_train)
     X_train = scaler.transform(X_train)
@@ -159,13 +159,13 @@ def model_training_and_evaluation_example():
     print('Accuracy: ', accuracy_score(y_test, y_pred))
     # We could use confusion matrix to view the classification for each activity.
     print(confusion_matrix(y_test, y_pred))
-    
+
 
     # Another machine learning model: svm. In this example code, we use gridsearch to find the optimial classifier
     # It will take a long time to find the optimal classifier.
-    # the accuracy for SVM classifier with default parameters is 0.71, 
-    # which is worse than KNN. The reason may be parameters of svm classifier are not optimal.  
-    # Another reason may be we only use 9 features and they are not enough to build a good svm classifier. 
+    # the accuracy for SVM classifier with default parameters is 0.71,
+    # which is worse than KNN. The reason may be parameters of svm classifier are not optimal.
+    # Another reason may be we only use 9 features and they are not enough to build a good svm classifier.
     tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-1,1e-2, 1e-3, 1e-4],
                      'C': [1e-3, 1e-2, 1e-1, 1, 10, 100, 100]},
                     {'kernel': ['linear'], 'C': [1e-3, 1e-2, 1e-1, 1, 10, 100]}]
@@ -186,7 +186,7 @@ def model_training_and_evaluation_example():
 # clf.fit(x_train, y_train)
 
 if __name__ == '__main__':
-    
+
     # data_visulization()
     # noise_removing()
     # feature_engineering_example()
