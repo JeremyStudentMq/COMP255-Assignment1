@@ -48,6 +48,9 @@ calibration, sensor errors, errors in sensor placement, or noisy environments. W
 to smooth data. In this example code, Butterworth low-pass filter is applied.
 '''
 
+#final stage, we should concatenate the averages in here
+def TrainAndEvaluateModel():
+
 
 #Pre - The data must be noise filtered already
 #refactored code provided by sample :) and made it a little more custom
@@ -83,7 +86,7 @@ def GetFeatures(input_data,data_size):
             feature_sample.append(standardError)
             feature_sample.append(skewness)
             feature_sample.append(kurtosis)
-            print(feature_sample)
+            #print(feature_sample)
         feature_sample.append(sample_data[0, -1])
         feature_sample = np.array([feature_sample])
         output_set = np.concatenate((output_set, feature_sample), axis=0)
@@ -98,13 +101,13 @@ def GetFeatures(input_data,data_size):
 def CalculateKurtosis(terms,mean,stdDev,size):
     tmpKurto=0
     for term in terms:
-        tmpKurto=tmpKurto+((term-mean)**4/size*stdDev**4)
+        tmpKurto=tmpKurto+(((term-mean)**4)/(size*stdDev**4))
     return tmpKurto
 
 def CalculateSkewness(terms,mean,stdDev,size):
     tmpSkew=0
     for term in terms:
-        tmpSkew=tmpSkew+((term-mean)**3/size*stdDev**3)
+        tmpSkew=tmpSkew+(((term-mean)**3)/(size*stdDev**3))
     return tmpSkew
 
 def SumOfTermsMinusMeanPow(terms,sampleMean,pow):
@@ -114,10 +117,11 @@ def SumOfTermsMinusMeanPow(terms,sampleMean,pow):
     return tmpSum
 
 def CreateTrainingAndTestingDataSets(dfs):
-        training = np.empty(shape=(0,10))
-        testing = np.empty(shape=(0,10))
         output_sets = []
+        i=1
         for df in dfs: #deal with each dataset
+            training_features = np.empty(shape=(0,193))
+            testing_features = np.empty(shape=(0,193))
             for c in range(1,14): #deal with each activity
                 activity_data=df[df[24]==c].values
                 datat_len = len(activity_data)
@@ -125,9 +129,16 @@ def CreateTrainingAndTestingDataSets(dfs):
                 training_data = activity_data[:training_len, :]
                 testing_data = activity_data[training_len:, :]
                 training_sample_number = training_len // 1000 + 1
+                training_features=np.concatenate((training_features,GetFeatures(training_data,training_sample_number)),axis=0)
                 testing_sample_number = (datat_len - training_len) // 1000 + 1
-                training_features=GetFeatures(training_data,training_sample_number)
-                testing_features=GetFeatures(testing_data,testing_sample_number)
+                testing_features=np.concatenate((testing_features,GetFeatures(testing_data,testing_sample_number)),axis=0)
+                print("Feature Appended")
+            print("We saving")
+            save_training_df=pd.DataFrame(training_features)
+            save_testing_df=pd.DataFrame(testing_features)
+            save_training_df.to_csv(os.getcwd()+"/../dataset/dirty/"+"training_data"+str(i)+".csv")
+            save_testing_df.to_csv(os.getcwd()+"/../dataset/dirty/"+"testing_data"+str(i)+".csv")
+            i=i+1
                 #print(training_features)
                 #print(testing_features)
 #Altered sample version of remove noise for my purposes
@@ -142,7 +153,7 @@ def RemoveNoise(df, activityVal):
 #2. visualize data -> done
 #3. remove signal noises -> done
 #4. extract features -> done
-#5. prepare training set -> to do
+#5. prepare training set -> done
 #6. training the given models -> to do
 #7. test the given models -> to do
 #8. print out the evaluation results -> to do
