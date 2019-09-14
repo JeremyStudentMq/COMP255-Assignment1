@@ -50,52 +50,82 @@ to smooth data. In this example code, Butterworth low-pass filter is applied.
 
 
 #Pre - The data must be noise filtered already
-def GetFeatures(dfs):
+def GetFeatures(input_data,data_size):
+    output_set=np.empty(shape=(0,193))
+    sample_data=[]
+    input_Data = input_data[:data_size,:]
+    for s in range(data_size):
+        if s < data_size - 1:
+            sample_data = input_data[1000*s:1000*(s + 1), :]
+        else:
+            sample_data = input_data[1000*s:, :]
+        # in this example code, only three accelerometer data in wrist sensor is used to extract three simple features: min, max, and mean value in
+        # a period of time. Finally we get 9 features and 1 label to construct feature dataset. You may consider all sensors' data and extract more
+        #I'm getting all.
+        feature_sample = []
+        for i in range(24): #all monitors used
+            min=np.min(sample_data[:, i])
+            max=np.max(sample_data[:, i])
+            mean=np.mean(sample_data[:, i])
+            terms=sample_data[:,i]
+            size = len(sample_data[:,i])
+            variance = SumOfTermsMinusMeanPow(terms,mean,2)/size-1
+            stdDev = math.sqrt((1/size)*SumOfTermsMinusMeanPow(terms,mean,2))
+            standardError = stdDev/math.sqrt(size)
+            skewness = CalculateSkewness(terms,mean,stdDev,size)
+            kurtosis=  CalculateKurtosis(terms,mean,stdDev,size)
+            feature_sample.append(min)
+            feature_sample.append(max)
+            feature_sample.append(mean)
+            feature_sample.append(variance)
+            feature_sample.append(stdDev)
+            print(stdDev)
+            feature_sample.append(standardError)
+            feature_sample.append(skewness)
+            feature_sample.append(kurtosis)
+        feature_sample.append(sample_data[0, -1])
+        feature_sample = np.array([feature_sample])
+        output_set = np.concatenate((output_set, feature_sample), axis=0)
+    return output_set
+
     # mean, median, mode Arithmetic average, median and mode
     # var, std Variance and standard deviation
     # sem Standard error of mean
     # skew Sample skewness
-    variance = SumOfTermsMinusMeanPow(terms,sampleMeans,2)/sizeOfTerms-1
-    stdDev = sqrt((1/size)*SumOfTermsMinusMeanPow(terms,sampleMeans,2)))
-    standardError = stdDev/sqrt(n)
-    skewness = CalculateSkewness(terms,mean,stdDev,size)
-    kurtosis=  CalculateKurtosis(terms,mean,stdDev,size)
+
 
 def CalculateKurtosis(terms,mean,stdDev,size):
     tmpKurto=0
     for term in terms:
-        tmpKurto=tmpKurto+((term-mean)^4/size*stdDev^4)
+        tmpKurto=tmpKurto+((term-mean)**4/size*stdDev**4)
     return tmpKurto
 
 def CalculateSkewness(terms,mean,stdDev,size):
     tmpSkew=0
     for term in terms:
-        tmpSkew=tmpSkew+((term-mean)^3/size*stdDev^3)
+        tmpSkew=tmpSkew+((term-mean)**3/size*stdDev**3)
     return tmpSkew
 
 def SumOfTermsMinusMeanPow(terms,sampleMean,pow):
     tmpSum = 0
     for term in terms:
-        tmpSum = tmpSum+(term-sampleMean)^pow
+        tmpSum = tmpSum+(term-sampleMean)**pow
     return tmpSum
 
 def CreateTrainingAndTestingDataSets(dfs):
-        for df in dfs:
-
-            datat_len = len(df)
-            activity_data=df.values
-            training_len = math.floor(datat_len * 0.8)
-            training_data = activity_data[:training_len, :]
-            testing_data = activity_data[training_len:, :]
-
-            # data segementation: for time series data, we need to segment the whole time series, and then extract features from each period of time
-            # to represent the raw data. In this example code, we define each period of time contains 1000 data points. Each period of time contains
-            # different data points. You may consider overlap segmentation, which means consecutive two segmentation share a part of data points, to
-            # get more feature samples.
-            training_sample_number = training_len // 1000 + 1
-            testing_sample_number = (datat_len - training_len) // 1000 + 1
-
-
+        training = np.empty(shape=(0,10))
+        testing = np.empty(shape=(0,10))
+        for df in dfs: #deal with each dataset
+            for c in range(1,14): #deal with each activity
+                activity_data=df[df[24]==c].values
+                datat_len = len(activity_data)
+                training_len = math.floor(datat_len * 0.8)
+                training_data = activity_data[:training_len, :]
+                testing_data = activity_data[training_len:, :]
+                training_sample_number = training_len // 1000 + 1
+                testing_sample_number = (datat_len - training_len) // 1000 + 1
+                training_features=GetFeatures(training_data,training_sample_number)
+                testing_features=GetFeatures(testing_data,testing_sample_number)
 #Altered sample version of remove noise for my purposes
 def RemoveNoise(df, activityVal):
     b, a = signal.butter(4, 0.04, 'high', analog=False)
@@ -116,5 +146,6 @@ def RemoveNoise(df, activityVal):
 
 if __name__ == '__main__':
     data = "../dataset/"
-    dataset=LoadData(os.getcwd()+"/../dataset/raw/")
+    datasets=LoadData(os.getcwd()+"/../dataset/raw/")
+    CreateTrainingAndTestingDataSets(datasets)
     #VisualiseData(dataset)
