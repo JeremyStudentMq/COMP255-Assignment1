@@ -42,6 +42,37 @@ def VisualiseData(dfs):
             plt.plot(df_plot[:, 0:9])
             plt.show()
 
+def loadDfFromPathWithArg(path,arg):
+    dfs=[]
+    for file in os.listdir(path):
+        if arg in file:
+            df = df.concat(df,pd.read_csv(dataFolderpath+file, sep=',', header=None))
+    return df
+
+def model_training_and_testing():
+    df_training=loadDfFromPathWithArg()
+    df_testing=loadDfFromPathWithArg()
+    y_train = df_training[192].values
+    # Labels should start from 0 in sklearn
+    y_train = y_train - 1
+    df_training = df_training.drop([192], axis=1)
+    X_train = df_training.values
+
+    y_test = df_testing[192].values
+    y_test = y_test - 1
+    df_testing = df_testing.drop([192], axis=1)
+    X_test = df_testing.values
+    scaler = preprocessing.StandardScaler().fit(X_train)
+    X_train = scaler.transform(X_train)
+    X_test = scaler.transform(X_test)
+    knn = KNeighborsClassifier(n_neighbors=3)
+    knn.fit(X_train, y_train)
+    y_pred = knn.predict(X_test)
+    print('Accuracy: ', accuracy_score(y_test, y_pred))
+    # We could use confusion matrix to view the classification for each activity.
+    print(confusion_matrix(y_test, y_pred))
+
+
 '''
 For raw sensor data, it usually contains noise that arises from different sources, such as sensor mis-
 calibration, sensor errors, errors in sensor placement, or noisy environments. We could apply filter to remove noise of sensor data
@@ -49,7 +80,7 @@ to smooth data. In this example code, Butterworth low-pass filter is applied.
 '''
 
 #final stage, we should concatenate the averages in here
-def TrainAndEvaluateModel():
+#def TrainAndEvaluateModel():
 
 
 #Pre - The data must be noise filtered already
@@ -132,8 +163,9 @@ def CreateTrainingAndTestingDataSets(dfs):
                 training_features=np.concatenate((training_features,GetFeatures(training_data,training_sample_number)),axis=0)
                 testing_sample_number = (datat_len - training_len) // 1000 + 1
                 testing_features=np.concatenate((testing_features,GetFeatures(testing_data,testing_sample_number)),axis=0)
-                print("Feature Appended")
-            print("We saving")
+                #print("Feature Appended")
+            print("Saved : " +"training_data"+str(i)+".csv")
+            print("Saved : " +"testing_data"+str(i)+".csv")
             save_training_df=pd.DataFrame(training_features)
             save_testing_df=pd.DataFrame(testing_features)
             save_training_df.to_csv(os.getcwd()+"/../dataset/dirty/"+"training_data"+str(i)+".csv")
@@ -162,5 +194,5 @@ def RemoveNoise(df, activityVal):
 if __name__ == '__main__':
     data = "../dataset/"
     datasets=LoadData(os.getcwd()+"/../dataset/raw/")
-    CreateTrainingAndTestingDataSets(datasets)
+    #CreateTrainingAndTestingDataSets(datasets)
     #VisualiseData(dataset)
