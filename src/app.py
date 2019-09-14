@@ -50,6 +50,7 @@ to smooth data. In this example code, Butterworth low-pass filter is applied.
 
 
 #Pre - The data must be noise filtered already
+#refactored code provided by sample :) and made it a little more custom
 def GetFeatures(input_data,data_size):
     output_set=np.empty(shape=(0,193))
     sample_data=[]
@@ -59,8 +60,7 @@ def GetFeatures(input_data,data_size):
             sample_data = input_data[1000*s:1000*(s + 1), :]
         else:
             sample_data = input_data[1000*s:, :]
-        # in this example code, only three accelerometer data in wrist sensor is used to extract three simple features: min, max, and mean value in
-        # a period of time. Finally we get 9 features and 1 label to construct feature dataset. You may consider all sensors' data and extract more
+
         #I'm getting all.
         feature_sample = []
         for i in range(24): #all monitors used
@@ -79,10 +79,11 @@ def GetFeatures(input_data,data_size):
             feature_sample.append(mean)
             feature_sample.append(variance)
             feature_sample.append(stdDev)
-            print(stdDev)
+            #print(stdDev)
             feature_sample.append(standardError)
             feature_sample.append(skewness)
             feature_sample.append(kurtosis)
+            print(feature_sample)
         feature_sample.append(sample_data[0, -1])
         feature_sample = np.array([feature_sample])
         output_set = np.concatenate((output_set, feature_sample), axis=0)
@@ -115,6 +116,7 @@ def SumOfTermsMinusMeanPow(terms,sampleMean,pow):
 def CreateTrainingAndTestingDataSets(dfs):
         training = np.empty(shape=(0,10))
         testing = np.empty(shape=(0,10))
+        output_sets = []
         for df in dfs: #deal with each dataset
             for c in range(1,14): #deal with each activity
                 activity_data=df[df[24]==c].values
@@ -126,6 +128,8 @@ def CreateTrainingAndTestingDataSets(dfs):
                 testing_sample_number = (datat_len - training_len) // 1000 + 1
                 training_features=GetFeatures(training_data,training_sample_number)
                 testing_features=GetFeatures(testing_data,testing_sample_number)
+                #print(training_features)
+                #print(testing_features)
 #Altered sample version of remove noise for my purposes
 def RemoveNoise(df, activityVal):
     b, a = signal.butter(4, 0.04, 'high', analog=False)
