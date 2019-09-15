@@ -27,40 +27,48 @@ def LoadData(dataFolderpath):
 def CleanNoise(dfs):
     cleanDfs=[]
     for df in dfs:
+        cleanFrame = np.empty(shape=(0,24))
         for c in range(1, 14):
-            activity_data = df[df[24] == c].values
+            activity_data = df[df[24]==c].values
             b, a = signal.butter(4, 0.04, 'low', analog=False)
             for j in range(24):
                 activity_data[:, j] = signal.lfilter(b, a, activity_data[:, j])
-        cleanDfs.append(activity_data)
+            cleanFrame= cleanFrame.append
+    cleanDfs.append(activity_data)
     return cleanDfs
 def VisualiseData(dfs):
     for df in dfs:
-        for i in range(1,13):
+        for i in range(1,14):
             df_plot = df[df[24] == i].values
             # In this example code, only accelerometer 1 data (column 1 to 3) is used
             plt.plot(df_plot[:, 0:9])
             plt.show()
 
 def loadDfFromPathWithArg(path,arg):
-    dfs=[]
+    frames=[]
     for file in os.listdir(path):
         if arg in file:
-            df = df.concat(df,pd.read_csv(dataFolderpath+file, sep=',', header=None))
-    return df
+            df = pd.read_csv(path+file, sep=',', header=None)
+            df= df.iloc[1:]
+            df = df.drop(df.columns[0],axis=1)
+            frames.append(df)
+    dfs=pd.concat(frames)
+    #dfs = dfs.iloc[1:]
+    #dfs = dfs.drop(dfs.columns[0],axis=1)
+    return dfs
 
 def model_training_and_testing():
-    df_training=loadDfFromPathWithArg()
-    df_testing=loadDfFromPathWithArg()
-    y_train = df_training[192].values
+    df_training=loadDfFromPathWithArg(os.getcwd()+"/../dataset/dirty/",'training')
+    df_testing=loadDfFromPathWithArg(os.getcwd()+"/../dataset/dirty/",'testing')
+    print(df_training)
+    y_train = df_training[193].values
     # Labels should start from 0 in sklearn
     y_train = y_train - 1
-    df_training = df_training.drop([192], axis=1)
+    df_training = df_training.drop([193], axis=1)
     X_train = df_training.values
-
-    y_test = df_testing[192].values
+    y_test = df_testing[193].values
     y_test = y_test - 1
-    df_testing = df_testing.drop([192], axis=1)
+    df_testing = df_testing.drop([193], axis=1)
     X_test = df_testing.values
     scaler = preprocessing.StandardScaler().fit(X_train)
     X_train = scaler.transform(X_train)
@@ -98,11 +106,13 @@ def GetFeatures(input_data,data_size):
         #I'm getting all.
         feature_sample = []
         for i in range(24): #all monitors used
-            min=np.min(sample_data[:, i])
-            max=np.max(sample_data[:, i])
-            mean=np.mean(sample_data[:, i])
-            terms=sample_data[:,i]
-            size = len(sample_data[:,i])
+            activity_data=sample_data[:, i]
+            activity_data = RemoveNoise(activity_data)
+            min=np.min(activity_data)
+            max=np.max(activity_data)
+            mean=np.mean(activity_data)
+            terms=activity_data
+            size = len(activity_data)
             variance = SumOfTermsMinusMeanPow(terms,mean,2)/size-1
             stdDev = math.sqrt((1/size)*SumOfTermsMinusMeanPow(terms,mean,2))
             standardError = stdDev/math.sqrt(size)
@@ -174,25 +184,24 @@ def CreateTrainingAndTestingDataSets(dfs):
                 #print(training_features)
                 #print(testing_features)
 #Altered sample version of remove noise for my purposes
-def RemoveNoise(df, activityVal):
+def RemoveNoise(data):
     b, a = signal.butter(4, 0.04, 'high', analog=False)
-    df_clean = df[df[24] == activityVal].values
-    for i in range(3):
-        df_clean[:,i] = signal.lfilter(b, a, df_clean[:, i])
-    return df_clean
+    data = signal.lfilter(b, a, data)
+    return data
 
 #1. load dataset -> done
 #2. visualize data -> done
 #3. remove signal noises -> done
 #4. extract features -> done
 #5. prepare training set -> done
-#6. training the given models -> to do
-#7. test the given models -> to do
-#8. print out the evaluation results -> to do
+#6. training the given models -> done
+#7. test the given models -> done
+#8. print out the evaluation results -> done
 
 
 if __name__ == '__main__':
     data = "../dataset/"
-    datasets=LoadData(os.getcwd()+"/../dataset/raw/")
+    #datasets=LoadData(os.getcwd()+"/../dataset/raw/")
     #CreateTrainingAndTestingDataSets(datasets)
+    model_training_and_testing()
     #VisualiseData(dataset)
