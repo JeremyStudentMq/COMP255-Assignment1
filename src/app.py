@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import math
 from sklearn import preprocessing
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import make_scorer, accuracy_score, confusion_matrix
+from sklearn.metrics import make_scorer, accuracy_score, confusion_matrix, precision_score, recall_score,precision_recall_fscore_support
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 import os
@@ -77,9 +77,27 @@ def model_training_and_testing():
     knn.fit(X_train, y_train)
     y_pred = knn.predict(X_test)
     print('Accuracy: ', accuracy_score(y_test, y_pred))
+    print('Precision: ', precision_score(y_test, y_pred, average='weighted'))
+    print('Recall: ', recall_score(y_test, y_pred,average='weighted'))
+    print('F Score: ', precision_recall_fscore_support(y_test, y_pred, average='weighted'))
     # We could use confusion matrix to view the classification for each activity.
     print(confusion_matrix(y_test, y_pred))
 
+    tuned_parameters = [{'kernel': ['rbf'], 'gamma': [1e-1,1e-2, 1e-3, 1e-4],
+                     'C': [1e-3, 1e-2, 1e-1, 1, 10, 100, 100]},
+                    {'kernel': ['linear'], 'C': [1e-3, 1e-2, 1e-1, 1, 10, 100]}]
+    acc_scorer = make_scorer(accuracy_score)
+    grid_obj  = GridSearchCV(SVC(), tuned_parameters, cv=10, scoring=acc_scorer)
+    grid_obj  = grid_obj .fit(X_train, y_train)
+    clf = grid_obj.best_estimator_
+    print('best clf:', clf)
+    clf.fit(X_train, y_train)
+    y_pred = clf.predict(X_test)
+    print('Accuracy: ', accuracy_score(y_test, y_pred))
+    print('Precision: ', precision_score(y_test, y_pred, average='weighted'))
+    print('Recall: ', recall_score(y_test, y_pred,average='weighted'))
+    print('F Score: ', precision_recall_fscore_support(y_test, y_pred, average='weighted'))
+    print(confusion_matrix(y_test, y_pred))
 
 '''
 For raw sensor data, it usually contains noise that arises from different sources, such as sensor mis-
@@ -87,12 +105,6 @@ calibration, sensor errors, errors in sensor placement, or noisy environments. W
 to smooth data. In this example code, Butterworth low-pass filter is applied.
 '''
 
-#final stage, we should concatenate the averages in here
-#def TrainAndEvaluateModel():
-
-
-#Pre - The data must be noise filtered already
-#refactored code provided by sample :) and made it a little more custom
 def GetFeatures(input_data,data_size):
     output_set=np.empty(shape=(0,193))
     sample_data=[]
@@ -107,7 +119,7 @@ def GetFeatures(input_data,data_size):
         feature_sample = []
         for i in range(24): #all monitors used
             activity_data=sample_data[:, i]
-            activity_data = RemoveNoise(activity_data)
+            activity_data = RemoveNoise(activity_data,'low', 0.04)
             min=np.min(activity_data)
             max=np.max(activity_data)
             mean=np.mean(activity_data)
@@ -142,14 +154,14 @@ def GetFeatures(input_data,data_size):
 def CalculateKurtosis(terms,mean,stdDev,size):
     tmpKurto=0
     for term in terms:
-        tmpKurto=tmpKurto+(((term-mean)**4)/(size*stdDev**4))
-    return tmpKurto
+        tmpKurto=tmpKurto+(((term-mean)**4))
+    return tmpKurto/(size-1*stdDev**4)
 
 def CalculateSkewness(terms,mean,stdDev,size):
     tmpSkew=0
     for term in terms:
-        tmpSkew=tmpSkew+(((term-mean)**3)/(size*stdDev**3))
-    return tmpSkew
+        tmpSkew=tmpSkew+(((term-mean)**3))
+    return tmpSkew/(size-1*stdDev**3)
 
 def SumOfTermsMinusMeanPow(terms,sampleMean,pow):
     tmpSum = 0
@@ -174,8 +186,8 @@ def CreateTrainingAndTestingDataSets(dfs):
                 testing_sample_number = (datat_len - training_len) // 1000 + 1
                 testing_features=np.concatenate((testing_features,GetFeatures(testing_data,testing_sample_number)),axis=0)
                 #print("Feature Appended")
-            print("Saved : " +"training_data"+str(i)+".csv")
-            print("Saved : " +"testing_data"+str(i)+".csv")
+            #print("Saved : " +"training_data"+str(i)+".csv")
+            #print("Saved : " +"testing_data"+str(i)+".csv")
             save_training_df=pd.DataFrame(training_features)
             save_testing_df=pd.DataFrame(testing_features)
             save_training_df.to_csv(os.getcwd()+"/../dataset/dirty/"+"training_data"+str(i)+".csv")
@@ -184,10 +196,16 @@ def CreateTrainingAndTestingDataSets(dfs):
                 #print(training_features)
                 #print(testing_features)
 #Altered sample version of remove noise for my purposes
-def RemoveNoise(data):
-    b, a = signal.butter(4, 0.04, 'high', analog=False)
+def RemoveNoise(data,filterType, alpha):
+    b, a = signal.butter(4,alpha, filterType, analog=False)
     data = signal.lfilter(b, a, data)
     return data
+
+#
+# def RemoveNoise(data):
+#     b, a = signal.butter(4, 0.04, 'high', analog=False)
+#     data = signal.lfilter(b, a, data)
+#     return data
 
 #1. load dataset -> done
 #2. visualize data -> done
@@ -198,10 +216,28 @@ def RemoveNoise(data):
 #7. test the given models -> done
 #8. print out the evaluation results -> done
 
+# HOW TO RUN
+'''
+There needs to be a dataset directory above the folder that app.py is run from.
+It needs to be called dataset and it MUST contain the following directories
+    - "raw" - which contains the raw .txt files
+    - "dirty" - which is where the feature data is output.
 
+so there needs to be
+Root
+    - src
+        -app.py
+    -dataset
+        -raw
+            -dataset.txt
+        -dirty
+            - feature samples will be stored here
+'''
+#
 if __name__ == '__main__':
     data = "../dataset/"
-    #datasets=LoadData(os.getcwd()+"/../dataset/raw/")
-    #CreateTrainingAndTestingDataSets(datasets)
+    datasets=LoadData(os.getcwd()+"/../dataset/raw/")
+    #VisualiseData(datasets)
+    CreateTrainingAndTestingDataSets(datasets)
     model_training_and_testing()
     #VisualiseData(dataset)
